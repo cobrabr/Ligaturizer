@@ -18,6 +18,37 @@ make
 
 The ligaturized fonts are written to `fonts/output/`. `make` needs the Fira Code TTFs described in [Requirements](#requirements) and stops with an error if they are missing. To fetch them and build in Docker in one step, without installing FontForge locally, run `./build-fonts.sh` (see [build-fonts.sh](#build-fontssh)).
 
+### Windows (native)
+
+`build.ps1` runs the same pipeline natively on Windows using the Python bindings bundled with the [FontForge Windows build](https://sourceforge.net/p/fontforgebuilds/). No Docker, WSL, bash, or git submodules are needed, and any monospaced TTF or OTF can be used as input. The bundled interpreter's own `pip` is broken, so install `fontTools` into its user site using any working Python 3.11+ with pip:
+
+```powershell
+$ffpython = 'C:\Program Files\FontForgeBuilds\bin\ffpython.exe'
+$target = & $ffpython -c 'import site; print(site.getusersitepackages())'
+python -m pip install --target $target --no-binary fonttools fonttools
+```
+
+`--no-binary` keeps the install pure Python; the MinGW interpreter cannot load a CPython C-extension wheel.
+
+Then ligaturize a font:
+
+```powershell
+.\build.ps1 -FontPath 'C:\Path\To\Font.ttf'
+```
+
+| Option | Description |
+| --- | --- |
+| `-FontPath` | Input TTF or OTF. Required. |
+| `-OutputDir` | Output directory, relative to the repo root or absolute. Defaults to `fonts/output/`. Every font in this directory is post-processed, so keep it dedicated to the build. |
+| `-LigatureFontFile` | Font to copy ligatures from. Defaults to Fira Code 6.2, downloaded into `fonts/fira/distr/ttf/` on first use. |
+| `-Prefix` | Prepended to the family name. Defaults to `Liga`; pass `''` to disable. |
+| `-OutputName` | Replacement family name, useful when a licence requires renaming. |
+| `-CopyCharacterGlyphs` | Also copy individual punctuation glyphs from Fira Code. |
+| `-FontForgePython` | Path to `ffpython.exe` when FontForge is installed elsewhere. |
+| `-Help` | Print the built-in help and exit. `Get-Help .\build.ps1 -Full` works too. |
+
+`build.ps1` exits non-zero if FontForge Python, `fontTools`, or either script fails.
+
 ## Examples
 
 This fork's Source Code Pro in Regular (`LigaSrcPro-Regular`) and Italic (`LigaSrcPro-It`), with ligatures for `->` and `!=`:
@@ -36,6 +67,7 @@ This fork's Source Code Pro in Regular (`LigaSrcPro-Regular`) and Italic (`LigaS
   | Debian / Ubuntu | `fontforge` and `python3-fontforge` packages |
   | openSUSE, NixOS | `fontforge` package (bindings included) |
   | macOS | `brew install fontforge` |
+  | Windows | [FontForge Windows build](https://sourceforge.net/p/fontforgebuilds/), which bundles `bin\ffpython.exe` with the Python bindings; see [Windows (native)](#windows-native) |
 
 - **fontTools for Python 3:** used by `postprocess.py`, which `make` runs on every generated font. `make` fails if it is missing.
 - **Editor support:** see the [Fira Code README](https://github.com/tonsky/FiraCode) for editors that render ligatures.
